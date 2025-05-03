@@ -1,4 +1,6 @@
-<img width="400" src="https://github.com/user-attachments/assets/44bac428-01bb-4fe9-9d85-96cba7698bee" alt="Tor Logo with the onion and a crosshair on it"/>
+<img width="600" src="https://github.com/user-attachments/assets/019bed2a-d5a3-4c26-89b4-53583f8e0ef3" alt="Tor Logo onion and fingers logging into Tor browser"/>
+
+
 
 # Threat Hunt Report: Unauthorized TOR Usage
 - [Scenario Creation](https://github.com/chiprojects/threat-hunting-scenario-tor/blob/main/threat-hunting-scenario-tor-event-creation)
@@ -11,7 +13,7 @@
 
 ##  Scenario
 
-Management suspects that some employees may be using TOR browsers to bypass network security controls because recent network logs show unusual encrypted traffic patterns and connections to known TOR entry nodes. Additionally, there have been anonymous reports of employees discussing ways to access restricted sites during work hours. The goal is to detect any TOR usage and analyze related security incidents to mitigate potential risks. If any use of TOR is found, notify management.
+Management has observed irregular patterns in encrypted network traffic, including connections to IP addresses associated with known Tor entry nodes. As a result, the team suspects that some employees might be utilizing the Tor Browser to bypass network security controls. Additionally, there have been anonymous reports indicating that certain staff members are discussing ways to access restricted sites during work hours. The goal is to detect any TOR usage within the organization's network and analyze related security incidents to mitigate potential risks. If any use of TOR is found, notify management immediately.
 
 ### High-Level TOR-Related IoC Discovery Plan
 
@@ -25,54 +27,70 @@ Management suspects that some employees may be using TOR browsers to bypass netw
 
 ### 1. Searched the `DeviceFileEvents` Table
 
-Searched for any file that had the string "tor" in it and discovered what looks like the user "employee" downloaded a TOR installer, did something that resulted in many TOR-related files being copied to the desktop, and the creation of a file called `tor-shopping-list.txt` on the desktop at `2024-11-08T22:27:19.7259964Z`. These events began at `2024-11-08T22:14:48.6065231Z`.
+Searched for any file that had the string "tor" in it and discovered what looks like the user "cyberwoman" downloaded a TOR installer. Additionally, multiple TOR-related files were copied to the desktop, and a file called `tor-shopping-list.txt` was created on the desktop at `2025-04-30T22:44:16.8581684Z`. These events began at `2025-04-29T15:52:36.0881443Z`.
 
 **Query used to locate events:**
 
 ```kql
-DeviceFileEvents  
-| where DeviceName == "threat-hunt-lab"  
-| where InitiatingProcessAccountName == "employee"  
-| where FileName contains "tor"  
-| where Timestamp >= datetime(2024-11-08T22:14:48.6065231Z)  
-| order by Timestamp desc  
-| project Timestamp, DeviceName, ActionType, FileName, FolderPath, SHA256, Account = InitiatingProcessAccountName
+
+DeviceFileEvents
+|where DeviceName == "chithreathunter"
+|where FileName contains "tor"
+|order by Timestamp desc
+|where InitiatingProcessAccountName == "cyberwoman"
+|where Timestamp >= datetime(2025-04-29T15:52:36.0881443Z)
+|project Timestamp, DeviceName, ActionType, FileName, FolderPath, SHA256, Account = InitiatingProcessAccountName
 ```
-<img width="1212" alt="image" src="https://github.com/user-attachments/assets/71402e84-8767-44f8-908c-1805be31122d">
+
+![image](https://github.com/user-attachments/assets/21b5cb3d-5c15-4497-8aec-2a51d726c9a9)
+![image](https://github.com/user-attachments/assets/a24e1d08-6b05-4bda-aaf9-5c1d05f6e393)
+![image](https://github.com/user-attachments/assets/18ad2b20-600d-421a-9920-e573ec44562d)
+![image](https://github.com/user-attachments/assets/5b8dcb68-6477-4be3-b944-2a0ee1aa1c93)
+![image](https://github.com/user-attachments/assets/5b78eea9-eb4f-48e2-bd7d-00d7c86756fc)
+![image](https://github.com/user-attachments/assets/c9be7b12-a875-49d1-bd88-8311d064428a)
 
 ---
 
 ### 2. Searched the `DeviceProcessEvents` Table
 
-Searched for any `ProcessCommandLine` that contained the string "tor-browser-windows-x86_64-portable-14.0.1.exe". Based on the logs returned, at `2024-11-08T22:16:47.4484567Z`, an employee on the "threat-hunt-lab" device ran the file `tor-browser-windows-x86_64-portable-14.0.1.exe` from their Downloads folder, using a command that triggered a silent installation.
+Searched for any `ProcessCommandLine` that contained the string "tor-browser-windows-x86_64-portable-14.5.1.exe". Based on the logs returned, at `2025-04-30T21:40:41.3321335Z`, employee `cyberwoman` on the "chithreathunter" device ran the file `tor-browser-windows-x86_64-portable-14.5.1.exe` from their Downloads folder, using a command `/S` that triggered a silent installation.
 
 **Query used to locate event:**
 
 ```kql
 
-DeviceProcessEvents  
-| where DeviceName == "threat-hunt-lab"  
-| where ProcessCommandLine contains "tor-browser-windows-x86_64-portable-14.0.1.exe"  
-| project Timestamp, DeviceName, AccountName, ActionType, FileName, FolderPath, SHA256, ProcessCommandLine
+DeviceProcessEvents
+|where DeviceName == 'chithreathunter'
+|where ProcessCommandLine contains "tor-browser-windows-x86_64-portable-14.5.1.exe"
+|project Timestamp, DeviceName, AccountName, ActionType, FileName, FolderPath, SHA256, ProcessCommandLine
+
 ```
-<img width="1212" alt="image" src="https://github.com/user-attachments/assets/b07ac4b4-9cb3-4834-8fac-9f5f29709d78">
+
+![image](https://github.com/user-attachments/assets/1f9a001d-b7e5-4e5f-85bc-576915283aad)
+
+↙️Snapshot of ProcessCommandLine
+
+![image](https://github.com/user-attachments/assets/e7f7f934-b9f5-4ca9-8e56-56879a3cc3c3)
 
 ---
 
 ### 3. Searched the `DeviceProcessEvents` Table for TOR Browser Execution
 
-Searched for any indication that user "employee" actually opened the TOR browser. There was evidence that they did open it at `2024-11-08T22:17:21.6357935Z`. There were several other instances of `firefox.exe` (TOR) as well as `tor.exe` spawned afterwards.
+Searched for any indication that the user "cyberwoman" actually opened the TOR browser. There was evidence that the Tor browser was opened at `2025-04-30T21:44:55.4442368Z`. There were several other instances of `firefox.exe` (TOR) as well as `tor.exe` initiated afterwards. 
 
 **Query used to locate events:**
 
 ```kql
-DeviceProcessEvents  
-| where DeviceName == "threat-hunt-lab"  
-| where FileName has_any ("tor.exe", "firefox.exe", "tor-browser.exe")  
-| project Timestamp, DeviceName, AccountName, ActionType, FileName, FolderPath, SHA256, ProcessCommandLine  
+DeviceProcessEvents
+| where DeviceName == 'chithreathunter'
+| where FileName has_any ("tor.exe", "firefox.exe", "tor.browser.exe")
+| project Timestamp, DeviceName, AccountName, ActionType, FileName, FolderPath, SHA256, ProcessCommandLine
 | order by Timestamp desc
 ```
-<img width="1212" alt="image" src="https://github.com/user-attachments/assets/b13707ae-8c2d-4081-a381-2b521d3a0d8f">
+
+![image](https://github.com/user-attachments/assets/9bebf50e-4d63-4181-9292-0aa7fa6d77d7)
+![image](https://github.com/user-attachments/assets/ae94f71f-3725-42c5-b251-3af46b28fae7)
+
 
 ---
 
